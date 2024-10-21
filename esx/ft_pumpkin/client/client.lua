@@ -3,8 +3,6 @@ local ESX = exports['es_extended']:getSharedObject()
 local spawnedPed = nil
 local isNearPed = false
 local spawnedpumpkins = {}
-local pumpkinCount = 0
-local totalpumpkin = 0
 local pumpkinFarm = false
 
 local function Draw3DText(x, y, z, text)
@@ -36,32 +34,7 @@ local function CreateBlip(coords, blipConfig)
     return blip
 end
 
-local function GetGroundZUsingRaycast(x, y)
-    local startZ = 1000.0
-    local endZ = -1000.0
-    local rayHandle = StartShapeTestRay(x, y, startZ, x, y, endZ, -1, PlayerPedId(), 0)
-    local _, hit, hitCoord = GetShapeTestResult(rayHandle)
-
-    if hit then
-        return hitCoord.z
-    else
-        return 5.0
-    end
-end
-
-local function getRandomLocationInZone(zone, radius)
-    local offsetX = math.random(-radius, radius)
-    local offsetY = math.random(-radius, radius)
-    local newLocation = vector3(zone.x + offsetX, zone.y + offsetY, zone.z)
-
-    local groundZ = GetGroundZUsingRaycast(newLocation.x, newLocation.y)
-
-    return vector3(newLocation.x, newLocation.y, groundZ)
-end
-
 local function CutPumpkin(prop, zoneName)
-
-    pumpkinCount = pumpkinCount + 1
 
     local playerPed = PlayerPedId()
 
@@ -95,10 +68,6 @@ local function CutPumpkin(prop, zoneName)
 
     TriggerServerEvent('ft_pumpkin:givepumpkin')
     pumpkinFarm = false
-
-    if pumpkinCount >= totalpumpkin then
-        lib.notify({ title = L('notify.pumpkin'), description = L('notify.finished_farming'), type = 'success' })
-    end
 end
 
 local function SpawnPumpkins(propModel, location)
@@ -109,16 +78,14 @@ local function SpawnPumpkins(propModel, location)
         Wait(500)
     end
 
-    local adjustedLocation = vector3(location.x, location.y, GetGroundZUsingRaycast(location.x, location.y))
-    local prop = CreateObject(model, adjustedLocation.x, adjustedLocation.y, adjustedLocation.z, true, true, true)
+    local prop = CreateObject(model, location.x, location.y, location.z, true, true, true)
+
+    PlaceObjectOnGroundProperly(prop)
+    FreezeEntityPosition(prop, true)
 
     SetEntityAsMissionEntity(prop, true, true)
 
-    PlaceObjectOnGroundProperly(prop)
-
-    FreezeEntityPosition(prop, true)
-
-    local blip = CreateBlip(adjustedLocation, Config.Blips.Zones)
+    local blip = CreateBlip(location, Config.Blips.Zones)
 
     local propCoords = GetEntityCoords(prop)
     local zoneName = 'interaction_prop_' .. #spawnedpumpkins + 1
@@ -146,9 +113,8 @@ local function SpawnPumpkins(propModel, location)
             }
         })
     end
-
-    totalpumpkin = totalpumpkin + 1
 end
+
 
 local function StarPumpkinFarming()
     if not pumpkinFarm then
@@ -157,15 +123,16 @@ local function StarPumpkinFarming()
         local randomIndex = math.random(1, #Config.Locations.Zones)
         local selectedZone = Config.Locations.Zones[randomIndex]
 
-        for i = 1, Config.Locations.Count do
-            local randomLocation = getRandomLocationInZone(selectedZone, Config.Locations.Radius)
-            SpawnPumpkins(Config.Locations.Prop, randomLocation)
+        for _, location in ipairs(selectedZone) do
+            SpawnPumpkins(Config.Locations.Prop, location)
         end
+        
         pumpkinFarm = true
     else
         lib.notify({ title = L('notify.pumpkin'), description = L('notify.already_farming'), type = 'success' })
     end
 end
+
 
 local function OpenSellMenu()
     local input = lib.inputDialog(L('menu.sell_pumpkins'), {
