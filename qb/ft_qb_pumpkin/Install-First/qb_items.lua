@@ -1,0 +1,1 @@
+ft_pumpkin        = {name = "ft_pumpkin",        label = "Pumpkin",        weight = 1, type = "item", image = "ft_pumpkin.png",        unique = false, useable = false, shouldClose = false, combinable = nil, expire = 90, description = "Pumpkin."},
