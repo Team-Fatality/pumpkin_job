@@ -82,9 +82,9 @@ local function SpawnPumpkins(propModel, location)
         Wait(500)
     end
 
-    local prop = CreateObject(model, location.x, location.y, location.z, true, true, true)
+    local prop = CreateObject(model, location.x, location.y, location.z - 1.0, true, true, true)
 
-    PlaceObjectOnGroundProperly(prop)
+    --PlaceObjectOnGroundProperly(prop)
     FreezeEntityPosition(prop, true)
 
     SetEntityAsMissionEntity(prop, true, true)
